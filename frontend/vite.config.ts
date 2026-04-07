@@ -36,9 +36,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // BACKEND_URL se inyecta desde Docker (http://backend:8000).
+    // En desarrollo local sin Docker usa el valor por defecto.
     proxy: {
-      "/api": { target: "http://127.0.0.1:8000", changeOrigin: true },
-      "/health": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/api":    { target: process.env.BACKEND_URL ?? "http://127.0.0.1:8000", changeOrigin: true },
+      "/health": { target: process.env.BACKEND_URL ?? "http://127.0.0.1:8000", changeOrigin: true },
     },
   },
 });

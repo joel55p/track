@@ -1,4 +1,7 @@
+version: "3.9"
+
 services:
+  # ── Base de datos PostgreSQL ──────────────────────────────────────────
   db:
     image: postgres:16-alpine
     environment:
@@ -9,6 +12,52 @@ services:
       - "5432:5432"
     volumes:
       - tp_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teleprogreso -d teleprogreso"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend FastAPI ───────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: teleprogreso_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://teleprogreso:teleprogreso@db:5432/teleprogreso
+      SECRET_KEY: cambiar-en-produccion-usar-env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    # Corre migraciones Alembic antes de iniciar el servidor
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  # ── Frontend React + Vite ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: teleprogreso_frontend
+    restart: unless-stopped
+    environment:
+      # BACKEND_URL es leído por vite.config.ts para el proxy dev
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   tp_pg_data:
