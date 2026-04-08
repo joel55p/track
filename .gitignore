@@ -5,6 +5,7 @@ venv/
 __pycache__/
 *.pyc
 .env
+backend/teleprogreso.db
 *.log
 .DS_Store
 frontend/dev-dist/

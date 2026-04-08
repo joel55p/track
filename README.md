@@ -1,43 +1,67 @@
 # Teleprogreso Track
 
-Aplicación web (PWA) para **supervisión de personal y gestión de activos** de **Teleprogreso S.A.**, alineada al **Corte 3** del curso (requisitos funcionales, roles técnico / supervisor) y a las tecnologías definidas en la presentación del proyecto: **FastAPI**, **React**, **PostgreSQL** y **PWA**.
+Aplicación web (PWA) para **supervisión de personal y gestión de activos** de **Teleprogreso S.A.**, alineada al **Corte 3** del curso (requisitos funcionales, roles técnico / supervisor) y a las tecnologías definidas en la presentación del proyecto: **FastAPI**, **React**, **PostgreSQL** (opcional) y **PWA**.
 
-Las **8 pantallas** del flujo (4 técnico + 4 supervisor) corresponden a las rutas de la app; el diseño visual detallado está en [Visily](https://app.visily.ai/projects/1d2ca634-3e11-485e-90ce-153cfd9e3cbe/boards/2526019) — aquí se implementan los mismos flujos y prioridades de UX descritas en el informe (prioridades de tarea, checklist de activos, métricas en dashboard, mapa con identificación de técnicos, reasignación por carga, etc.).
+Las **8 pantallas** del flujo (4 técnico + 4 supervisor) corresponden a las rutas de la app; el diseño visual detallado está en [Visily](https://app.visily.ai/projects/1d2ca634-3e11-485e-90ce-153cfd9e3cbe/boards/2526019).
 
-## Estructura
+---
 
-- `backend/` — API REST con FastAPI (auth JWT, tareas, asistencia, activos, supervisión).
-- `frontend/` — React + TypeScript + Vite + `vite-plugin-pwa`.
-- `docker-compose.yml` — PostgreSQL 16 para desarrollo.
+## Qué necesita cada persona (requisitos)
 
-## Requisitos
+| Herramienta | Para qué | Notas |
+|-------------|----------|--------|
+| **Git** | Clonar el repositorio | Cualquier versión reciente. |
+| **Python 3.11+** | Backend (FastAPI) | En Windows suele usarse `py -3` o `python`. |
+| **Node.js 20+ y npm** | Frontend (React + Vite) | Si `npm` no se reconoce, instalar Node LTS desde [nodejs.org](https://nodejs.org) y **reabrir** la terminal. |
+| **Docker Desktop** (opcional) | Solo si quieren **PostgreSQL** en lugar de SQLite | No es obligatorio para probar el proyecto. |
 
-- Python 3.11+ (probado con 3.13).
-- Node.js 20+ y npm (para el frontend).
-- Docker (opcional, recomendado para PostgreSQL).
+**No hace falta** instalar PostgreSQL a mano si usan la opción por defecto (**SQLite**): se crea el archivo `backend/teleprogreso.db` al correr el seed.
 
-## Base de datos
+---
+
+## Si compartes el repo: qué deben hacer (paso a paso)
+
+Necesitan **dos terminales** abiertas a la vez: una para el **backend** y otra para el **frontend**.
+
+### 1) Clonar e ir al proyecto
 
 ```bash
-docker compose up -d
+git clone <url-de-tu-repo>.git
+cd track
 ```
 
-Copie `backend/.env.example` a `backend/.env` y ajuste `DATABASE_URL` si es necesario. Por defecto apunta a `localhost:5432` con usuario/clave `teleprogreso`.
+### 2) Backend (terminal 1)
 
-## Backend
+**Windows (PowerShell o CMD):**
+
+```powershell
+cd backend
+py -3 -m venv .venv
+.\.venv\Scripts\activate.bat
+pip install -r requirements.txt
+copy .env.example .env
+py -m app.seed
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+**macOS / Linux:**
 
 ```bash
 cd backend
-py -3 -m venv .venv
-.venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-py -m app.seed
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cp .env.example .env
+python -m app.seed
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Documentación interactiva: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+- Dejan esta terminal **abierta** mientras prueban la app.
+- La API queda en **http://127.0.0.1:8000** (documentación: **http://127.0.0.1:8000/docs**).
 
-## Frontend
+**Nota Windows:** si `Activate.ps1` abre el Bloc de notas, usen **`activate.bat`** como arriba.
+
+### 3) Frontend (terminal 2)
 
 ```bash
 cd frontend
@@ -45,25 +69,39 @@ npm install
 npm run dev
 ```
 
-Abrir [http://localhost:5173](http://localhost:5173). Las peticiones a `/api` se reenvían al backend por el proxy de Vite.
+- Abrir en el navegador: **http://localhost:5173**
+- El frontend envía `/api` al backend por el proxy de Vite → **el backend debe estar corriendo** en el puerto 8000.
 
-## Usuarios de demostración
+### 4) Entrar a la aplicación
 
-| Rol        | Correo               | Contraseña |
-|-----------|----------------------|------------|
-| Técnico   | `tecnico@demo.tp`    | `demo123`  |
-| Técnico 2 | `tecnico2@demo.tp`   | `demo123`  |
-| Supervisor| `supervisor@demo.tp` | `demo123`  |
+| Rol | Correo | Contraseña |
+|-----|--------|------------|
+| Técnico | `tecnico@demo.tp` | `demo123` |
+| Técnico 2 | `tecnico2@demo.tp` | `demo123` |
+| Supervisor | `supervisor@demo.tp` | `demo123` |
 
-## Pantallas implementadas
+---
 
-**Técnico:** Mi ruta diaria · Mapa de ruta · Pausas y asistencia · Inventario y vehículo (checklist + incidencias).
+## Base de datos: SQLite (por defecto) vs PostgreSQL
 
-**Supervisor:** Dashboard (métricas + mapa) · Alertas y retrasos · Reasignar servicios · Activos en tiempo real (filtros y bloques por tipo).
+- **Por defecto** (`backend/.env` copiado de `.env.example`): **SQLite** → archivo `backend/teleprogreso.db`. No requiere Docker.
+- **PostgreSQL:** `docker compose up -d` en la raíz del repo, y en `backend/.env` usar la línea comentada de `DATABASE_URL` con Postgres (ver `.env.example`).
 
-**Login:** pantalla de acceso común con redirección según rol.
+---
+
+## Estructura del repo
+
+- `backend/` — API REST (FastAPI).
+- `frontend/` — React + TypeScript + Vite + PWA.
+- `docker-compose.yml` — PostgreSQL 16 (opcional).
+
+## Pantallas
+
+**Técnico:** Mi ruta · Mapa / Navegación · Pausas / Asistencia · Equipo / Activos.  
+**Supervisor:** Dashboard · Alertas · Reasignar · Inventario.  
+**Login** común con redirección por rol.
 
 ## Producción
 
-- Configurar `SECRET_KEY` y CORS en el backend.
-- `npm run build` en `frontend/` y servir `dist/` detrás de HTTPS para habilitar PWA y geolocalización de forma fiable.
+- Definir `SECRET_KEY` y CORS en el backend.
+- `npm run build` en `frontend/` y servir `dist/` detrás de HTTPS para PWA y geolocalización fiable.

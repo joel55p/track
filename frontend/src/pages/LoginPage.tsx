@@ -1,3 +1,4 @@
+import axios from "axios";
 import { FormEvent, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
@@ -28,8 +29,17 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await login(email.trim(), password);
-    } catch {
-      setErr("No se pudo iniciar sesión. Verifique correo y contraseña.");
+    } catch (e) {
+      if (axios.isAxiosError(e) && !e.response) {
+        setErr(
+          "No hay conexión con el servidor. Deje corriendo el backend: uvicorn en http://127.0.0.1:8000",
+        );
+      } else if (axios.isAxiosError(e) && e.response?.data?.detail != null) {
+        const d = e.response.data.detail;
+        setErr(typeof d === "string" ? d : "Credenciales incorrectas o error del servidor.");
+      } else {
+        setErr("No se pudo iniciar sesión. Verifique correo y contraseña.");
+      }
     } finally {
       setBusy(false);
     }
